@@ -11,3 +11,9 @@ class ReadFile:
       info = json.dumps(data['info'], sort_keys=True)
       hs = hashlib.sha256(info.encode('utf-8')).hexdigest()
       return hs
+
+  def getTrackerIp(file_path):
+    with open(file_path) as json_file:
+      data = json.load(json_file)
+      trackerIp = data['announce']
+      return trackerIp
