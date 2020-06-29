@@ -17,3 +17,8 @@ class ReadFile:
       data = json.load(json_file)
       trackerIp = data['announce']
       return trackerIp
+
+  def getNPiece(file, n, piece_length):
+    file.seek(piece_length*n, 0)
+    answer = file.read(piece_length)
+    return answer

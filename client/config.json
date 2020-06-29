@@ -1,0 +1,6 @@
+{
+  "download_folder":"ecotorrent_download",
+  "default_tracker_ip":"127.0.0.1:5000",
+  "default_port": 5005,
+  "peer_id": "-ET0001-1f99441bc819ff607664031b92696811bd50cd81468fbe56b931c4e7"
+}
