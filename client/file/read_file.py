@@ -45,3 +45,8 @@ class ReadFile:
       info = data['info']
       length = int(info['length'])
       return length
+
+  def getName(file_path):
+    with open(file_path) as json_file:
+      info = data['info']
+      return info['name']

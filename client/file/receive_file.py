@@ -5,6 +5,7 @@ import os
 import hashlib
 from messages import Messages
 from read_file import ReadFile
+from concatenate_file import ConcatenateFile
 import sys
 sys.path.append("..")
 from peers.peers import Peers
@@ -92,6 +93,9 @@ class ReceiveFile:
       s.send(b"0002")
       data = s.recv(piece_length)
       s.close()
+
+    temp = "{}{}".format(os.path.splitext(self.output_path)[0], "/temp")
+    ConcatenateFile.concatenateFile(self.file_path, self.output_path, temp)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
