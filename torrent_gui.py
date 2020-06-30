@@ -5,6 +5,8 @@
 import sys
 import os
 from functools import partial
+import subprocess
+import sqlite3
 
 # Import QApplication and the required widgets from PyQt5.QtWidgets
 from PyQt5.QtWidgets import QApplication
@@ -14,7 +16,10 @@ from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5 import QtCore, QtGui, QtWidgets, QtSvg
 from PyQt5.QtWidgets import QFileDialog
 
-#Models definition
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+# Models definition
 
 # def evaluateExpression(expression):
 #     """Evaluate an expression."""
@@ -28,10 +33,36 @@ from PyQt5.QtWidgets import QFileDialog
 # Create a subclass of QMainWindow to setup the calculator's GUI
 class TorrentUI(QMainWindow):
     """ECOTorrent's View (GUI)."""
+
     def __init__(self):
         """View initializer."""
         super().__init__()
         self.currentTorrents = []
+        print('python server\\tracker_server.py')
+        subprocess.Popen('python server\\tracker_server.py')
+        subprocess.Popen('python client\\file\\send_file.py')
+        print(BASE_DIR + '\\client\\db\\files.db')
+        conn = sqlite3.connect(BASE_DIR + '\\client\\db\\files.db')
+        c = conn.cursor()
+
+        try:
+            c.execute('SELECT * FROM files')
+            files = c.fetchall()
+            for file in files:
+                fileDict = {
+                    'isSelected': False,
+                    'file_name': file[2],
+                    'bytes_downloaded': 0,
+                    'total_size': int(file[3]),
+                    'status': 0,
+                    'speed': 0,
+                }
+                self.currentTorrents.append(fileDict)
+        except Exception as e:
+            print(e)
+
+        conn.close()
+
         # Set some main window's properties
         self.setWindowTitle('ECOTorrent')
         self.setFixedSize(750, 600)
@@ -66,15 +97,20 @@ class TorrentUI(QMainWindow):
         newTorrents = self.currentTorrents
         if newTorrents:
             newTorrents[0]['bytes_downloaded'] = newTorrents[0]['bytes_downloaded'] + 5
-            self.updateTorrentComponents(newTorrents= newTorrents)
-
+            self.updateTorrentComponents(newTorrents=newTorrents)
 
     def updateTorrentComponents(self, newTorrents):
         current = self.currentTorrents
         for i in range(len(self.currentTorrents)):
-                self.updateSingleComponent(current[i], newTorrents[i])
+            self.updateSingleComponent(current[i], newTorrents[i])
 
-
+    def createTorrentComponents(self):
+        for i in range(len(self.currentTorrents)):
+            newComponent = self.createSingleTorrentComponent(self.currentTorrents[i]['isSelected'], self.currentTorrents[i]['file_name'],
+                                                             self.currentTorrents[i]['bytes_downloaded'], self.currentTorrents[i]['total_size'],
+                                                             self.currentTorrents[i]['status'], self.currentTorrents[i]['speed'])
+            self.currentTorrents[i]['component'] = newComponent
+            self.verticalLayout.addWidget(newComponent)
 
     def createSingleTorrentComponent(self, isSelected, file_name, bytes_downloaded, total_size, status, speed):
         self.torrent_file = QtWidgets.QWidget(self.scrollAreaWidgetContents)
@@ -105,7 +141,7 @@ class TorrentUI(QMainWindow):
         self.checkBox.setObjectName("checkBox")
         self.checkBox.toggled.connect(partial(self.onChecked, self.torrent_file))
         self.horizontalLayout_5.addWidget(self.checkBox)
-        self.fileIcon = QtSvg.QSvgWidget('ui\documento.svg') #add svg
+        self.fileIcon = QtSvg.QSvgWidget('ui\documento.svg')  # add svg
         self.fileIcon.setMaximumSize(QtCore.QSize(50, 50))
         self.fileIcon.setObjectName("fileIcon")
         self.horizontalLayout_5.addWidget(self.fileIcon)
@@ -132,7 +168,7 @@ class TorrentUI(QMainWindow):
         font.setPointSize(12)
         self.fileProgress.setFont(font)
         self.fileProgress.setObjectName("fileProgress")
-        self.fileProgress.setText(str(bytes_downloaded) + "Mb de " + str(total_size) + "Mb")
+        self.fileProgress.setText(str(bytes_downloaded/1000) + "Kb de " + str(total_size/1000) + "Kb")
         self.verticalLayout_12.addWidget(self.fileProgress)
         self.horizontalLayout_5.addWidget(self.fileInfo)
         self.verticalLayout_11.addWidget(self.torrentFileInfo)
@@ -140,7 +176,7 @@ class TorrentUI(QMainWindow):
         font = QtGui.QFont()
         font.setFamily("Calibri")
         self.progressBar.setFont(font)
-        self.progressBar.setProperty("value", bytes_downloaded/total_size*100)
+        self.progressBar.setProperty("value", bytes_downloaded / total_size * 100)
         self.progressBar.setObjectName("progressBar")
         self.verticalLayout_11.addWidget(self.progressBar)
         self.statusLabel = QtWidgets.QLabel(self.torrent_file)
@@ -149,7 +185,7 @@ class TorrentUI(QMainWindow):
         font.setPointSize(10)
         self.statusLabel.setFont(font)
         self.statusLabel.setObjectName("statusLabel")
-        self.statusLabel.setText("Status: " +  str(status) + " - Velocidade: "+ str(speed) +" Mb/s")
+        self.statusLabel.setText("Status: " + str(status) + " - Velocidade: " + str(speed) + " Mb/s")
         self.verticalLayout_11.addWidget(self.statusLabel)
         self.bottomLine = QtWidgets.QFrame(self.torrent_file)
         self.bottomLine.setFrameShadow(QtWidgets.QFrame.Plain)
@@ -161,33 +197,35 @@ class TorrentUI(QMainWindow):
 
     def onChecked(self, torrent):
         for file in self.currentTorrents:
-            if(file['component'] == torrent):
+            if (file['component'] == torrent):
                 file['isSelected'] = not file['isSelected']
                 print(self.currentTorrents)
-
 
     def updateSingleComponent(self, item, newValues):
         item = self.currentTorrents[self.currentTorrents.index(item)]
         self.verticalLayout.removeWidget(item['component'])
-        item['component'].deleteLater() 
+        item['component'].deleteLater()
         item['isSelected'] = newValues['isSelected']
         item['file_name'] = newValues['file_name']
         item['bytes_downloaded'] = newValues['bytes_downloaded']
         item['total_size'] = newValues['total_size']
         item['status'] = newValues['status']
         item['speed'] = newValues['speed']
-        newComponent = self.createSingleTorrentComponent(item['isSelected'], item['file_name'], item['bytes_downloaded'], item['total_size'], item['status'], item['speed'])
+        newComponent = self.createSingleTorrentComponent(item['isSelected'], item['file_name'],
+                                                         item['bytes_downloaded'], item['total_size'], item['status'],
+                                                         item['speed'])
         item['component'] = newComponent
         self.verticalLayout.addWidget(newComponent)
-    
+
     def openFileNameDialog(self):
         options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getOpenFileName(None,"Selecione um arquivo .torrent", "","All Files (*)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(None, "Selecione um arquivo .torrent", "", "All Files (*)",
+                                                  options=options)
         if fileName:
             print(fileName)
             return fileName
 
-    def _createTitle(self): 
+    def _createTitle(self):
         self.program_title = QtWidgets.QLabel()
         self.program_title.setText("ECOTorrent")
         font = QtGui.QFont()
@@ -206,8 +244,8 @@ class TorrentUI(QMainWindow):
         self.buttonLayout.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
         self.buttonLayout.setContentsMargins(0, 0, 0, 0)
         self.buttonLayout.setSpacing(6)
-        
-        #Add Button
+
+        # Add Button
         self.add_button = QtWidgets.QToolButton(self.verticalLayoutWidget_2)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -223,9 +261,8 @@ class TorrentUI(QMainWindow):
         self.add_button.setIconSize(QtCore.QSize(100, 100))
         self.add_button.setObjectName("add_button")
         self.buttonLayout.addWidget(self.add_button)
-        
-        
-        #Pause Button
+
+        # Pause Button
         self.pause_button = QtWidgets.QToolButton(self.verticalLayoutWidget_2)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -241,8 +278,8 @@ class TorrentUI(QMainWindow):
         self.pause_button.setIconSize(QtCore.QSize(75, 75))
         self.pause_button.setObjectName("pause_button")
         self.buttonLayout.addWidget(self.pause_button)
-        
-        #Continue Button
+
+        # Continue Button
         self.continue_button = QtWidgets.QToolButton(self.verticalLayoutWidget_2)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -258,8 +295,8 @@ class TorrentUI(QMainWindow):
         self.continue_button.setIconSize(QtCore.QSize(100, 75))
         self.continue_button.setObjectName("continue_button")
         self.buttonLayout.addWidget(self.continue_button)
-        
-        #Remove Button
+
+        # Remove Button
         self.remove_button = QtWidgets.QToolButton(self.verticalLayoutWidget_2)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -275,8 +312,8 @@ class TorrentUI(QMainWindow):
         self.remove_button.setIconSize(QtCore.QSize(80, 70))
         self.remove_button.setObjectName("remove_button")
         self.buttonLayout.addWidget(self.remove_button)
-        
-        #About Button
+
+        # About Button
         self.about_button = QtWidgets.QToolButton(self.verticalLayoutWidget_2)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
@@ -307,15 +344,16 @@ class TorrentUI(QMainWindow):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName("verticalLayout")
 
-        # self.updateTorrentComponents()
+        self.createTorrentComponents()
 
         self.scrollArea_torrentFiles.setWidget(self.scrollAreaWidgetContents)
         self.componentsLayout.addWidget(self.scrollArea_torrentFiles)
 
+
 # Create a Controller class to connect the GUI and the model
 class TorrentCtrl:
-
     """TorrentUI Controller class."""
+
     def __init__(self, view):
         """Controller initializer."""
         self._view = view
@@ -324,24 +362,25 @@ class TorrentCtrl:
 
     def _addTorrent(self):
         fileName = self._view.openFileNameDialog()
-        if(fileName):
-            os.system('python client\\file\\create_file.py ' + fileName + ' ' + os.path.basename(fileName) + '.ecot' + ' -ip localhost:5000')
+        if (fileName):
+            os.system('python client\\file\\create_file.py ' + fileName + ' ' + os.path.basename(
+                fileName) + '.ecot' + ' -ip localhost:5000')
             newFileDict = {
-                    'isSelected' : True,
-                    'file_name' : os.path.basename(fileName),
-                    'bytes_downloaded' : 0,
-                    'total_size' : 500,
-                    'status' : 0,
-                    'speed' : 0,
-                }
+                'isSelected': True,
+                'file_name': os.path.basename(fileName),
+                'bytes_downloaded': 0,
+                'total_size': 500,
+                'status': 0,
+                'speed': 0,
+            }
             newFileDict['component'] = self._view.createSingleTorrentComponent(
-                                    isSelected = newFileDict['isSelected'],
-                                    file_name = newFileDict['file_name'],
-                                    bytes_downloaded = newFileDict['bytes_downloaded'],
-                                    total_size = newFileDict['total_size'],
-                                    status = newFileDict['status'],
-                                    speed = newFileDict['speed']
-                                )
+                isSelected=newFileDict['isSelected'],
+                file_name=newFileDict['file_name'],
+                bytes_downloaded=newFileDict['bytes_downloaded'],
+                total_size=newFileDict['total_size'],
+                status=newFileDict['status'],
+                speed=newFileDict['speed']
+            )
             self._view.currentTorrents.append(
                 newFileDict
             )
@@ -353,17 +392,16 @@ class TorrentCtrl:
 
     def _pauseTorrent(self):
         for torrent in self._view.currentTorrents:
-            if(torrent['isSelected']):
+            if (torrent['isSelected']):
                 print('if')
                 oldItem = torrent
                 torrent['status'] = 2
                 torrent['isSelected'] = False
                 self._view.updateSingleComponent(oldItem, torrent)
 
-
     def _continueTorrent(self):
         for torrent in self._view.currentTorrents:
-            if(torrent['isSelected']):
+            if (torrent['isSelected']):
                 print('if')
                 oldItem = torrent
                 torrent['status'] = 1
@@ -373,7 +411,7 @@ class TorrentCtrl:
     def _removeTorrent(self):
         for torrent in self._view.currentTorrents:
             print('for')
-            if(torrent['isSelected']):
+            if (torrent['isSelected']):
                 print('if')
                 self._view.currentTorrents.remove(torrent)
                 self._view.verticalLayout.removeWidget(torrent['component'])
@@ -381,24 +419,25 @@ class TorrentCtrl:
 
     def _aboutWindow(self):
         fileName = self._view.openFileNameDialog()
-        if(fileName):
-            os.system('python client\\file\\create_file.py ' + fileName + ' ' + os.path.basename(fileName).strip() + '.ecot' + ' -ip localhost:5000')
+        if (fileName):
+            os.system('python client\\file\\create_file.py ' + fileName + ' ' + os.path.basename(
+                fileName).strip() + '.ecot' + ' -ip localhost:5000')
             newFileDict = {
-                    'isSelected' : True,
-                    'file_name' : os.path.basename(fileName),
-                    'bytes_downloaded' : 0,
-                    'total_size' : 500,
-                    'status' : 0,
-                    'speed' : 0,
-                }
+                'isSelected': True,
+                'file_name': os.path.basename(fileName),
+                'bytes_downloaded': 0,
+                'total_size': 500,
+                'status': 0,
+                'speed': 0,
+            }
             newFileDict['component'] = self._view.createSingleTorrentComponent(
-                                    isSelected = newFileDict['isSelected'],
-                                    file_name = newFileDict['file_name'],
-                                    bytes_downloaded = newFileDict['bytes_downloaded'],
-                                    total_size = newFileDict['total_size'],
-                                    status = newFileDict['status'],
-                                    speed = newFileDict['speed']
-                                )
+                isSelected=newFileDict['isSelected'],
+                file_name=newFileDict['file_name'],
+                bytes_downloaded=newFileDict['bytes_downloaded'],
+                total_size=newFileDict['total_size'],
+                status=newFileDict['status'],
+                speed=newFileDict['speed']
+            )
             self._view.currentTorrents.append(
                 newFileDict
             )
@@ -421,6 +460,7 @@ class TorrentCtrl:
             print(Exception)
         print('connected')
 
+
 # Client code
 def main():
     """Main function."""
@@ -429,7 +469,7 @@ def main():
     # Show the torrent's GUI
     view = TorrentUI()
     file = open('ui/style.qss', 'r')
-    #Set Style Sheet
+    # Set Style Sheet
     with file:
         qss = file.read()
         ecotorrent.setStyleSheet(qss)
@@ -440,6 +480,7 @@ def main():
     ctrl = TorrentCtrl(view=view)
     # Execute the torrent's main loop
     sys.exit(ecotorrent.exec_())
+
 
 if __name__ == '__main__':
     main()

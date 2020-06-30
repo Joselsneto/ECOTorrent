@@ -7,11 +7,11 @@ class FileTable:
   def __init__():
     pass
 
-  def insert(info_hash, path):
+  def insert(info_hash, path, f_name, f_size):
     conn = sqlite3.connect(BASE_DIR + '/files.db')
     c = conn.cursor()
-    data = (info_hash, path)
-    c.execute("INSERT INTO files VALUES (?, ?)", data)
+    data = (info_hash, path, f_name, f_size)
+    c.execute("INSERT INTO files VALUES (?, ?, ?, ?)", data)
     conn.commit()
     conn.close()
 
