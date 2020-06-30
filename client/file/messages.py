@@ -10,7 +10,7 @@ class Messages:
     pass
 
   def getInfoHash(hs_message):
-    return hs_message[21:85]
+    return hs_message[20:84]
 
   def getMessageType(message):
     return message[0:4]

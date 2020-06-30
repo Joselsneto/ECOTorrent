@@ -1,5 +1,6 @@
 import json
 import hashlib
+import math
 
 class ReadFile:
   def __init__(self):
@@ -22,3 +23,25 @@ class ReadFile:
     file.seek(piece_length*n, 0)
     answer = file.read(piece_length)
     return answer
+
+  def getNHashPiece(file_path, n):
+    with open(file_path) as json_file:
+      data = json.load(json_file)
+      info = data['info']
+      pieces = info['pieces']
+      return pieces[n*64:(n+1)*64]
+
+  def getNumberOfPieces(file_path):
+    with open(file_path) as json_file:
+      data = json.load(json_file)
+      info = data['info']
+      length = int(info['length'])
+      piece_length = int(info['piece_length'])
+      return math.ceil(length/piece_length)
+
+  def getPieceLength(file_path):
+    with open(file_path) as json_file:
+      data = json.load(json_file)
+      info = data['info']
+      length = int(info['length'])
+      return length
