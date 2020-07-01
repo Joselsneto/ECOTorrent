@@ -3,6 +3,7 @@ import argparse
 import queue
 import os
 import hashlib
+import shutil
 from messages import Messages
 from read_file import ReadFile
 from concatenate_file import ConcatenateFile
@@ -96,6 +97,8 @@ class ReceiveFile:
 
     temp = "{}{}".format(os.path.splitext(self.output_path)[0], "/temp")
     ConcatenateFile.concatenateFile(self.file_path, self.output_path, temp)
+    temp = os.path.splitext(self.output_path)[0]
+    shutil.rmtree(temp)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

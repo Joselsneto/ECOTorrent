@@ -1,11 +1,11 @@
 import socket
 import struct
 from threading import Thread
-from client.file.messages import Messages
-from client.file.read_file import ReadFile
+from messages import Messages
+from read_file import ReadFile
 import sys
 sys.path.append("..")
-from client.db.file_table import FileTable
+from db.file_table import FileTable
 
 BUFFER_SIZE = 1024
 
