@@ -363,8 +363,8 @@ class TorrentCtrl:
     def _addTorrent(self):
         fileName = self._view.openFileNameDialog()
         if (fileName):
-            #python receive_file.py ~ / Projects / unifei / ECOTorrent / sample / test.ecot - op ~ / Projects / unifei / ECOTorrent / sample / test.txt
-
+            os.system('python client\\file\\create_file.py ' + fileName + ' ' + os.path.basename(
+                fileName) + '.ecot' + ' -ip localhost:5000')
             newFileDict = {
                 'isSelected': True,
                 'file_name': os.path.basename(fileName),
@@ -387,8 +387,6 @@ class TorrentCtrl:
             self._view.verticalLayout.addWidget(
                 newFileDict['component']
             )
-            os.system('python client\\file\\receive_file.py ' + fileName + ' -op ' + BASE_DIR + os.path.basename(
-                fileName).strip())
             print(newFileDict)
             print(self._view.currentTorrents)
 
